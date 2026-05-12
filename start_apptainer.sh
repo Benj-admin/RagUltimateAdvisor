@@ -110,30 +110,28 @@ fi
 # Optional: Wait a few seconds for DB and Ollama to boot
 sleep 5
 
-# 4. Build Apptainer image for the app if it doesn't exist
-if [ ! -f "ultimate-advisor.sif" ]; then
-    echo "4. Building Application Image "
-    apptainer build ultimate-advisor.sif UltimateAdvisor.def
-fi
-
-# Create a fast wrapper image just to inject the proper background startscript
+# 4. Prepare Application Environment
+echo "4. Preparing Application Environment"
 if [ ! -f "ultimate-advisor-bg.sif" ]; then
-    echo "   Creating background execution wrapper for Application..."
+    echo "   Building lightweight App image without %post section..."
     cat <<'EOF' > AppWrapper.def
-Bootstrap: localimage
-From: ultimate-advisor.sif
+Bootstrap: docker
+From: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 %startscript
-    HOST_DIR=$PWD
-    cd /app && exec .venv/bin/fastapi run src/main.py --host 0.0.0.0 --port 8000 > "$HOST_DIR/app.log" 2>&1
+    cd "$PWD"
+    exec .venv/bin/fastapi run src/main.py --host 0.0.0.0 --port 8000 > app.log 2>&1
 EOF
     apptainer build ultimate-advisor-bg.sif AppWrapper.def
 fi
 
+echo "   Syncing Python dependencies..."
+apptainer exec ultimate-advisor-bg.sif sh -c "export UV_LINK_MODE=copy && uv sync"
+
 # 5. Start the Application Instance
 echo "5. Starting Application"
 if ! apptainer instance list | grep -q "app-advisor"; then
-    apptainer instance start --writable-tmpfs ultimate-advisor-bg.sif app-advisor
+    apptainer instance start ultimate-advisor-bg.sif app-advisor
     
     echo "   Waiting for FastAPI to start..."
     sleep 3
