@@ -14,6 +14,9 @@ from llama_index.core import (
     VectorStoreIndex,
 )
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.postprocessor import SimilarityPostprocessor
+from llama_index.core.query_engine import RetrieverQueryEngine
+from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.postgres import PGVectorStore
@@ -110,6 +113,7 @@ class RAGRepository:
                 user=settings.PG_USER,
                 table_name=settings.VECTOR_TABLE_NAME,
                 embed_dim=embed_dim,
+                # hybrid_search=True,
             )
             logger.info(
                 "Vector store configured with table '%s' (embed_dim=%s)",
@@ -209,10 +213,21 @@ class RAGRepository:
 
             optimized_top_k = min(query_request.top_k * 2, 15)
 
-            query_engine = self.index.as_query_engine(
+            # Retriever
+            # Modes : "default", "sparse" , "hybrid"
+            retriever = VectorIndexRetriever(
+                index=self.index,
                 similarity_top_k=optimized_top_k,
+                vector_store_query_mode="default",
+            )
+
+            # Post-processing/ Rerank
+            postprocessors = [SimilarityPostprocessor(similarity_cutoff=0.6)]
+
+            query_engine = RetrieverQueryEngine.from_args(
+                retriever=retriever,
                 response_mode="tree_summarize",
-                similarity_cutoff=0.6,
+                node_postprocessors=postprocessors,
             )
             response = query_engine.query(query_request.query)
 

@@ -38,3 +38,12 @@ This repository was forked from another RAG architecture: https://github.com/you
 3. **Query Processing**: User questions are embedded and matched against stored vectors
 4. **Response Generation**: Retrieved context is sent to the chat model for answer generation
 5. **History Tracking**: All conversations are persisted for future reference
+
+
+## **How to run**
+
+./start_apptainer.sh
+
+apptainer exec instance://app-advisor .venv/bin/python src/scripts/run_init_db.py
+
+apptainer exec instance://app-advisor .venv/bin/python src/scripts/run_load_embeddings.py

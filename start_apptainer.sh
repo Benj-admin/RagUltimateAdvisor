@@ -11,7 +11,8 @@ source .env
 set +a
 
 # 1. Create data directories for persistence
-mkdir -p pgdata ollama_data
+PG_DATA_DIR="pgdata_${APP_EMBEDDING_MODEL:-default}"
+mkdir -p "$PG_DATA_DIR" ollama_data
 
 if [ ! -f "pg-advisor.sif" ]; then
     echo "Building custom PostgreSQL image to bypass Docker entrypoint..."
@@ -30,10 +31,10 @@ fi
 
 # 2. Start PostgreSQL / pgvector Instance
 echo "1. Setting up PostgreSQL"
-if [ ! -s pgdata/PG_VERSION ]; then
+if [ ! -s "$PG_DATA_DIR/PG_VERSION" ]; then
     echo "Initializing new database cluster"
     apptainer exec \
-        --bind pgdata:/var/lib/postgresql/data \
+        --bind "$PG_DATA_DIR:/var/lib/postgresql/data" \
         pg-advisor.sif \
         /usr/lib/postgresql/17/bin/initdb -D /var/lib/postgresql/data --auth=trust
 fi
@@ -41,7 +42,7 @@ fi
 echo "2. Starting PostgreSQL instance"
 if ! apptainer instance list | grep -q "pg-advisor"; then
     apptainer instance start \
-        --bind pgdata:/var/lib/postgresql/data \
+        --bind "$PG_DATA_DIR:/var/lib/postgresql/data" \
         pg-advisor.sif pg-advisor
         
     echo "   Waiting for PostgreSQL to start..."
@@ -50,14 +51,14 @@ if ! apptainer instance list | grep -q "pg-advisor"; then
         sleep 1
     done
 
-    apptainer exec instance://pg-advisor /usr/lib/postgresql/17/bin/pg_isready -h /var/lib/postgresql/data -p "${APP_PG_PORT:-5432}" -U postgres >/dev/null 2>&1 || { echo "PostgreSQL failed to start. Logs:"; cat pgdata/postgres.log; exit 1; }
+    apptainer exec instance://pg-advisor /usr/lib/postgresql/17/bin/pg_isready -h /var/lib/postgresql/data -p "${APP_PG_PORT:-5432}" -U postgres >/dev/null 2>&1 || { echo "PostgreSQL failed to start. Logs:"; cat "$PG_DATA_DIR/postgres.log"; exit 1; }
     
-    if [ ! -f "pgdata/.db_initialized" ]; then
+    if [ ! -f "$PG_DATA_DIR/.db_initialized" ]; then
         echo "   Creating database and user from .env..."
         apptainer exec instance://pg-advisor /usr/lib/postgresql/17/bin/psql -h /var/lib/postgresql/data -p ${APP_PG_PORT:-5432} -d postgres -c "CREATE USER $APP_PG_USER WITH PASSWORD '$APP_PG_PASSWORD';" || true
         apptainer exec instance://pg-advisor /usr/lib/postgresql/17/bin/psql -h /var/lib/postgresql/data -p ${APP_PG_PORT:-5432} -d postgres -c "CREATE DATABASE $APP_PG_DATABASE OWNER $APP_PG_USER;" || true
         apptainer exec instance://pg-advisor /usr/lib/postgresql/17/bin/psql -h /var/lib/postgresql/data -p ${APP_PG_PORT:-5432} -d $APP_PG_DATABASE -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
-        touch pgdata/.db_initialized
+        touch "$PG_DATA_DIR/.db_initialized"
     fi
 else
     echo "   Instance 'pg-advisor' is already running."
