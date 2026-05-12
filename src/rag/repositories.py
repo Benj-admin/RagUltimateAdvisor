@@ -15,7 +15,7 @@ from llama_index.core import (
 )
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.postprocessor import SimilarityPostprocessor
-from llama_index.core.query_engine import RetrieverQueryEngine
+from llama_index.core.query_engine import CitationQueryEngine
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.embeddings.ollama import OllamaEmbedding
 from llama_index.llms.ollama import Ollama
@@ -53,6 +53,7 @@ class RAGRepository:
             Settings.embed_model = OllamaEmbedding(
                 model_name=settings.EMBEDDING_MODEL,
                 base_url=settings.OLLAMA_BASE_URL,
+                embed_batch_size=512,
             )
             logger.info(
                 "Models configured: LLM=%s, Embedding=%s",
@@ -153,6 +154,7 @@ class RAGRepository:
                 embed_model=Settings.embed_model,
                 show_progress=True,
                 transformations=[text_splitter],
+                insert_batch_size=2048,  # OPTIMISATION PostgreSQL: Insère les vecteurs par lots de 2048 en BDD
             )
 
             if self.index:
@@ -224,16 +226,17 @@ class RAGRepository:
             # Post-processing/ Rerank
             postprocessors = [SimilarityPostprocessor(similarity_cutoff=0.6)]
 
-            query_engine = RetrieverQueryEngine.from_args(
+            query_engine = CitationQueryEngine.from_args(
                 retriever=retriever,
                 response_mode="tree_summarize",
                 node_postprocessors=postprocessors,
+                citation_chunk_size=256,
             )
             response = query_engine.query(query_request.query)
 
             source_documents: list[SourceDocument] = []
             if hasattr(response, "source_nodes") and response.source_nodes:
-                top_nodes = response.source_nodes[: query_request.top_k]
+                top_nodes = response.source_nodes
                 for node in top_nodes:
                     node_metadata = node.metadata if hasattr(node, "metadata") else {}
                     file_name = (

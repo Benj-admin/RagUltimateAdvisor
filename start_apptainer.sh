@@ -74,6 +74,10 @@ From: ollama/ollama
 
 %startscript
     export OLLAMA_HOST=0.0.0.0:11434
+    export OLLAMA_NUM_PARALLEL=16
+    export OLLAMA_MAX_QUEUE=1024
+    export OLLAMA_FLASH_ATTENTION=1
+    export OLLAMA_KEEP_ALIVE="5m"
     exec ollama serve > /root/.ollama/ollama.log 2>&1
 
 %runscript
@@ -82,9 +86,9 @@ EOF
     apptainer build ollama-advisor.sif OllamaAdvisor.def
 fi
 
-# Note: Add --nv before --bind if you want NVIDIA GPU support (e.g., apptainer instance start --nv ...)
 if ! apptainer instance list | grep -q "ollama-advisor"; then
     apptainer instance start \
+        --nv \
         --bind ollama_data:/root/.ollama \
         ollama-advisor.sif ollama-advisor
         
