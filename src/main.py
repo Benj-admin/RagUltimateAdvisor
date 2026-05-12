@@ -41,15 +41,15 @@ logger = setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("🚀 Ultimate Advisor API server started successfully")
-    logger.info("📚 RAG-based chat system for Ultimate Frisbee rules and guidance")
+    logger.info("🚀 Baseline RAG API server started successfully")
+    logger.info("📚 RAG-based chat system for document processing and Q&A")
     yield
-    logger.info("🛑 Ultimate Advisor API server shutting down")
+    logger.info("🛑 Baseline RAG API server shutting down")
 
 
 app = FastAPI(
-    title="Ultimate Advisor API",
-    description="A RAG-based chat system for Ultimate Frisbee rules and guidance",
+    title="Baseline RAG EvalLLM API",
+    description="A RAG-based chat system for document processing and Q&A",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -203,8 +203,8 @@ async def not_found_handler(request: Request, exc: HTTPException) -> JSONRespons
 async def root() -> APIInfoResponse:
     """Root endpoint providing API information."""
     return APIInfoResponse(
-        message="Welcome to Ultimate Advisor API",
-        description="A RAG-based chat system for Ultimate Frisbee rules and guidance",
+        message="Welcome to Baseline RAG EvalLLM API",
+        description="A RAG-based chat system for document processing and Q&A",
         version="1.0.0",
         endpoints={
             "docs": "/docs",
@@ -220,5 +220,5 @@ async def root() -> APIInfoResponse:
 async def health_check() -> HealthCheckResponse:
     """Health check endpoint for monitoring."""
     return HealthCheckResponse(
-        status="healthy", service="Ultimate Advisor API", version="1.0.0"
+        status="healthy", service="Baseline RAG EvalLLM API", version="1.0.0"
     )

@@ -143,7 +143,7 @@ def main() -> None:
     """Main entry point."""
     try:
         logger.info("=" * 50)
-        logger.info("Ultimate Advisor - Document Loading Script")
+        logger.info("Document Loading Script")
         logger.info("=" * 50)
         rag_service: RAGService = get_rag_service()
 

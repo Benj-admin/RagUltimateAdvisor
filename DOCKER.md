@@ -1,6 +1,6 @@
-# Docker Setup Guide for Ultimate Advisor
+# Docker Setup Guide for Baseline RAG EvalLLM
 
-This guide will help you run the entire Ultimate Advisor application stack using Docker with an integrated frontend-backend setup.
+This guide will help you run the entire Baseline RAG application stack using Docker with an integrated frontend-backend setup.
 
 ## Prerequisites
 
@@ -28,8 +28,8 @@ The application uses an integrated approach where:
    ```bash
    # Update these values in .env
    APP_PG_PASSWORD=your_secure_password_here
-   APP_PG_USER=ultimateadvisor
-   APP_PG_DATABASE=ultimateadvisor_db
+   APP_PG_USER=rag_user
+   APP_PG_DATABASE=rag_db
    ```
 
 3. **Start all services:**

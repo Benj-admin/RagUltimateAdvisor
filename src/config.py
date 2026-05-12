@@ -1,4 +1,4 @@
-"""Configuration module for the Ultimate Advisor application."""
+"""Configuration module for the RAG EvalLLM application."""
 
 from pathlib import Path
 

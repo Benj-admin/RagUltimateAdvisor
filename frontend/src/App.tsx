@@ -178,9 +178,9 @@ function App() {
     : null;
 
   const suggestionPills = [
-    "When is play considered dead?",
-    "How do marking infractions reset the stall?",
-    "What counts as a strip foul?",
+    "What are the main key points?",
+    "Can you summarize the introduction?",
+    "What conclusions are drawn in the text?",
   ];
 
   const showWelcomeState =
@@ -338,8 +338,8 @@ function App() {
                     </h2>
                     <p className="mt-2 max-w-xl text-sm text-muted-foreground">
                       {activeChatMeta
-                        ? "Review your selected discussion or continue exploring Ultimate Frisbee rulings."
-                        : "Ask a question about WFDF rules, strategy nuances, or tricky in-game situations."}
+                        ? "Review your selected discussion or continue exploring your documents."
+                        : "Ask a question to explore your indexed documents and extract information."}
                     </p>
                   </div>
                 </div>
@@ -361,12 +361,12 @@ function App() {
                     </div>
                     <div className="space-y-3">
                       <h3 className="text-2xl font-semibold md:text-3xl">
-                        Your Ultimate Frisbee rulebook, in chat form
+                        Your intelligent document assistant, in chat form
                       </h3>
                       <p className="text-sm text-muted-foreground md:text-base">
-                        Use conversational questions to explore scenarios,
-                        confirm rulings, or pull citations from the official
-                        WFDF rule set.
+                        Use conversational questions to explore your documents,
+                        extract insights, and pull citations from your
+                        indexed sources.
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-3">
@@ -408,9 +408,8 @@ function App() {
                       currentMessages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex items-end gap-3 ${
-                            message.type === "user" ? "flex-row-reverse" : ""
-                          }`}
+                          className={`flex items-end gap-3 ${message.type === "user" ? "flex-row-reverse" : ""
+                            }`}
                         >
                           <Avatar className="h-9 w-9 border border-border/60 bg-background/80 text-primary">
                             <AvatarFallback>
@@ -422,23 +421,21 @@ function App() {
                             </AvatarFallback>
                           </Avatar>
                           <div
-                            className={`flex max-w-[78%] flex-col gap-2 ${
-                              message.type === "user"
+                            className={`flex max-w-[78%] flex-col gap-2 ${message.type === "user"
                                 ? "items-end text-right"
                                 : ""
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground/80">
                               {message.type === "assistant"
-                                ? "AI Ultimate Advisor"
+                                ? "AI Assistant"
                                 : "You"}
                             </div>
                             <div
-                              className={`rounded-2xl border px-4 py-3 text-sm leading-relaxed shadow-sm transition ${
-                                message.type === "user"
+                              className={`rounded-2xl border px-4 py-3 text-sm leading-relaxed shadow-sm transition ${message.type === "user"
                                   ? "border-primary/70 bg-primary text-primary-foreground shadow-primary/20"
                                   : "border-border/60 bg-background/65 backdrop-blur"
-                              }`}
+                                }`}
                             >
                               <p className="whitespace-pre-wrap text-sm md:text-[15px]">
                                 {message.content}
@@ -461,7 +458,7 @@ function App() {
                         </Avatar>
                         <div className="flex max-w-[78%] flex-col gap-2">
                           <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground/80">
-                            AI Ultimate Advisor
+                            AI Assistant
                           </div>
                           <div className="rounded-2xl border border-border/60 bg-background/65 px-4 py-3 backdrop-blur">
                             <div className="flex items-center gap-2 text-sm">
@@ -515,7 +512,7 @@ function App() {
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <div className="relative flex-1">
                     <Input
-                      placeholder="Ask about Ultimate Frisbee rules..."
+                      placeholder="Ask a question about your documents..."
                       value={inputMessage}
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyDown={handleKeyDown}
@@ -554,11 +551,10 @@ function App() {
           <div className="space-y-5">
             <div className="space-y-3">
               <h1 className="text-2xl font-semibold leading-tight">
-                Ultimate Advisor
+                Baseline RAG EvalLLM
               </h1>
               <p className="text-sm text-muted-foreground">
-                Quickly clarify WFDF rulings, marking mechanics, and on-field
-                scenarios.
+                Intelligent document processing and AI-powered Q&A.
               </p>
             </div>
             <Button
@@ -622,11 +618,10 @@ function App() {
                     <button
                       key={chat.id}
                       onClick={() => handleSelectChat(chat.id)}
-                      className={`w-full rounded-2xl border px-4 py-4 text-left transition-all ${
-                        activeChat === chat.id
+                      className={`w-full rounded-2xl border px-4 py-4 text-left transition-all ${activeChat === chat.id
                           ? "border-primary/60 bg-primary/15 text-foreground shadow-[0_12px_30px_-22px_rgba(0,0,0,0.8)]"
                           : "border-transparent bg-background/45 text-muted-foreground hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">

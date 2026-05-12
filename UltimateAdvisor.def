@@ -2,7 +2,7 @@ Bootstrap: docker
 From: python:3.12-slim
 
 %labels
-    Author UltimateAdvisor
+    Author BaselineRAGEvalLLM
     Version v1.0
 
 %environment
@@ -12,10 +12,13 @@ From: python:3.12-slim
 %setup
     # Create the app directory in the container
     mkdir -p ${APPTAINER_ROOTFS}/app
-
-%files
-    # Copy project files into the container
-    . /app
+    
+    # Copy ONLY necessary source files (avoids copying huge pgdata/ollama_data or broken .venv)
+    cp -r src ${APPTAINER_ROOTFS}/app/
+    cp -r frontend ${APPTAINER_ROOTFS}/app/
+    cp pyproject.toml ${APPTAINER_ROOTFS}/app/
+    [ -f "uv.lock" ] && cp uv.lock ${APPTAINER_ROOTFS}/app/ || true
+    [ -f ".env" ] && cp .env ${APPTAINER_ROOTFS}/app/ || true
 
 %post
     # 1. Install system dependencies (Node.js for frontend, curl for uv)
@@ -27,14 +30,12 @@ From: python:3.12-slim
     # 2. Build Frontend
     cd /app/frontend
     # Remove host node_modules to avoid architecture conflicts
-    rm -rf node_modules
+    rm -rf node_modules || true
     pnpm install
     pnpm run build
 
     # 3. Setup Python Backend
     cd /app
-    # Remove any virtual environment copied from the host to prevent conflicts
-    rm -rf .venv
     curl -LsSf https://astral.sh/uv/install.sh | sh
     /root/.local/bin/uv sync
 

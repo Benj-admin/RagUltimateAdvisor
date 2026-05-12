@@ -3,7 +3,7 @@
 # Exit on error
 set -e
 
-echo "Starting Ultimate Advisor with Apptainer"
+echo "Starting RAG with Apptainer"
 
 # Load .env variables at the start so all services can use them
 set -a
@@ -140,6 +140,6 @@ echo "All services started!"
 echo ""
 echo "To view running instances: apptainer instance list"
 echo "To stop everything: apptainer instance stop --all"
-echo "To view app logs: apptainer exec instance://app-advisor cat /proc/self/fd/1"
+echo "To view app logs: cat app.log"
 echo ""
 echo "App is accessible at http://localhost:8000"
