@@ -1,0 +1,9 @@
+Bootstrap: docker
+From: ollama/ollama
+
+%startscript
+    export OLLAMA_HOST=0.0.0.0:11434
+    exec ollama serve > /root/.ollama/ollama.log 2>&1
+
+%runscript
+    exec ollama "$@"

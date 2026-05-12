@@ -384,6 +384,3 @@ class RAGRepository:
             logger.error(f"Health check failed: {e}")
 
         return health
-
-
-rag_repository = RAGRepository()

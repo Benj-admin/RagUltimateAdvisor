@@ -1,0 +1,8 @@
+Bootstrap: docker
+From: pgvector/pgvector:pg17
+
+%startscript
+    exec /usr/lib/postgresql/17/bin/postgres -D /var/lib/postgresql/data -p 5432 -c unix_socket_directories=/var/lib/postgresql/data -c listen_addresses='*' > /var/lib/postgresql/data/postgres.log 2>&1
+
+%runscript
+    exec /usr/lib/postgresql/17/bin/postgres "$@"

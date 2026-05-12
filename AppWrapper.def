@@ -1,0 +1,6 @@
+Bootstrap: localimage
+From: ultimate-advisor.sif
+
+%startscript
+    HOST_DIR=$PWD
+    cd /app && exec .venv/bin/fastapi run src/main.py --host 0.0.0.0 --port 8000 > "$HOST_DIR/app.log" 2>&1
