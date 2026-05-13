@@ -53,7 +53,7 @@ class RAGRepository:
             Settings.embed_model = OllamaEmbedding(
                 model_name=settings.EMBEDDING_MODEL,
                 base_url=settings.OLLAMA_BASE_URL,
-                embed_batch_size=512,
+                embed_batch_size=256,
             )
             logger.info(
                 "Models configured: LLM=%s, Embedding=%s",
