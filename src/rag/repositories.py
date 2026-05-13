@@ -158,14 +158,39 @@ class RAGRepository:
                 documents, num_workers=4, show_progress=True
             )
 
-            logger.info("Génération des embeddings et insertion dans PostgreSQL...")
+            logger.info("Initialisation de l'index...")
             self.index = VectorStoreIndex(
-                nodes,
+                [],
                 storage_context=self.storage_context,
                 embed_model=Settings.embed_model,
-                show_progress=True,
-                insert_batch_size=2048,
             )
+
+            logger.info(
+                "Génération des embeddings et insertion (Mode Détective Ultra-Résilient)..."
+            )
+            batch_size = 32
+            for i in range(0, len(nodes), batch_size):
+                batch = nodes[i : i + batch_size]
+                try:
+                    self.index.insert_nodes(batch)
+                except Exception:
+                    logger.warning(
+                        "Lot problématique détecté. Recherche du chunk coupable en mode manuel..."
+                    )
+                    for node in batch:
+                        try:
+                            self.index.insert_nodes([node])
+                        except Exception:
+                            file_name = node.metadata.get("file_name", "Inconnu")
+                            page = node.metadata.get("page", "Inconnu")
+                            text_snippet = node.text[:200].replace("\n", " ")
+                            logger.error(
+                                f"❌ CRASH CONFIRMÉ SUR : Fichier '{file_name}' | Page {page}"
+                            )
+                            logger.error(f"-> Extrait du texte : {text_snippet}...")
+                            logger.warning(
+                                "-> Ce morceau a été ignoré. L'indexation continue !"
+                            )
 
             if self.index:
                 try:
