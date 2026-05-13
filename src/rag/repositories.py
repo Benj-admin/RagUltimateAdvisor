@@ -136,8 +136,9 @@ class RAGRepository:
             logger.info(f"Number of documents to index: {len(documents)}")
 
             for doc in documents:
-                if hasattr(doc, "text") and doc.text:
-                    doc.text = doc.text.replace("\x00", "")
+                content = doc.get_content()
+                if content:
+                    doc.set_content(content.replace("\x00", ""))
 
             text_splitter = SentenceSplitter(
                 chunk_size=256,
