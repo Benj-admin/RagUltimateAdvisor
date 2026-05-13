@@ -24,6 +24,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Masquer les logs trop bavards des bibliothèques externes
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("pypdf").setLevel(logging.WARNING)
+
 
 class DocumentLoader:
     """Handles loading and processing of documents."""
