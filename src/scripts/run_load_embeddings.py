@@ -23,8 +23,6 @@ logging.basicConfig(
     handlers=[logging.FileHandler("load_embeddings.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
-
-# Masquer les logs trop bavards des bibliothèques externes
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("pypdf").setLevel(logging.WARNING)
 
@@ -36,6 +34,7 @@ class DocumentLoader:
         """Initialize the document loader."""
         self.supported_extensions = {
             ".pdf",
+            ".PDF",
         }
 
     def get_document_files(self, directory_path: str) -> list[Path]:

@@ -152,13 +152,18 @@ class RAGRepository:
                 vector_store=self.vector_store
             )
 
-            self.index = VectorStoreIndex.from_documents(
-                documents,
+            logger.info("Découpage des documents en chunks (Multiprocessing)...")
+            nodes = text_splitter.get_nodes_from_documents(
+                documents, num_workers=4, show_progress=True
+            )
+
+            logger.info("Génération des embeddings et insertion dans PostgreSQL...")
+            self.index = VectorStoreIndex(
+                nodes,
                 storage_context=self.storage_context,
                 embed_model=Settings.embed_model,
                 show_progress=True,
-                transformations=[text_splitter],
-                insert_batch_size=2048,  # OPTIMISATION PostgreSQL: Insère les vecteurs par lots de 2048 en BDD
+                insert_batch_size=2048,
             )
 
             if self.index:
