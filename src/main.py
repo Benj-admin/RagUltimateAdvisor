@@ -132,42 +132,44 @@ async def download_file(filename: str):
 
 
 static_path = Path("files")
-if static_path.exists() and static_path.is_dir():
-    app.mount("/files", StaticFiles(directory="files"), name="files")
-    logger.info("Static files mounted at /files")
+static_path.mkdir(parents=True, exist_ok=True)
+app.mount("/files", StaticFiles(directory="files"), name="files")
+logger.info("Static files mounted at /files")
 
 
 frontend_dist_path = Path("frontend/dist")
-if frontend_dist_path.exists() and frontend_dist_path.is_dir():
-    app.mount(
-        "/assets", StaticFiles(directory=frontend_dist_path / "assets"), name="assets"
-    )
-    logger.info("Frontend assets mounted at /assets")
+assets_path = frontend_dist_path / "assets"
+assets_path.mkdir(parents=True, exist_ok=True)
+app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+logger.info("Frontend assets mounted at /assets")
 
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        """Serve the SPA for all non-API routes."""
-        if (
-            full_path.startswith("api/")
-            or full_path.startswith("docs")
-            or full_path.startswith("redoc")
-            or full_path.startswith("files/")
-        ):
-            raise HTTPException(status_code=404, detail="Not found")
 
-        file_path = frontend_dist_path / full_path
-        if file_path.exists() and file_path.is_file():
-            return FileResponse(file_path)
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    """Serve the SPA for all non-API routes."""
+    if (
+        full_path.startswith("api/")
+        or full_path.startswith("docs")
+        or full_path.startswith("redoc")
+        or full_path.startswith("files/")
+        or full_path.startswith("rag")
+        or full_path.startswith("history")
+        or full_path == "health"
+    ):
+        raise HTTPException(status_code=404, detail="Not found")
 
-        index_file = frontend_dist_path / "index.html"
-        if index_file.exists():
-            return FileResponse(index_file)
+    file_path = frontend_dist_path / full_path
+    if full_path and file_path.exists() and file_path.is_file():
+        return FileResponse(file_path)
 
-        raise HTTPException(status_code=404, detail="Frontend not found")
+    index_file = frontend_dist_path / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
 
-    logger.info("SPA routing configured for frontend")
-else:
-    logger.warning("Frontend dist directory not found - frontend will not be served")
+    if full_path == "":
+        return await root()
+
+    raise HTTPException(status_code=404, detail="Frontend not found")
 
 
 @app.exception_handler(500)
