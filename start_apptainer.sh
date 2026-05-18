@@ -120,7 +120,7 @@ From: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 %startscript
     cd "$PWD"
-    exec .venv/bin/fastapi run src/main.py --host 0.0.0.0 --port 8000 > app.log 2>&1
+    exec .venv/bin/fastapi run src/main.py --host 0.0.0.0 --port 8001 > app.log 2>&1
 EOF
     apptainer build ultimate-advisor-bg.sif AppWrapper.def
 fi
@@ -157,4 +157,4 @@ echo "To view running instances: apptainer instance list"
 echo "To stop everything: apptainer instance stop --all"
 echo "To view app logs: cat app.log"
 echo ""
-echo "App is accessible at http://localhost:8000"
+echo "App is accessible at http://localhost:8001"
