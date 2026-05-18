@@ -39,6 +39,14 @@ class RAGService:
         """
         return self.rag_repository.get_document_count()
 
+    def get_indexed_file_names(self) -> set[str]:
+        """Get the set of file names already indexed.
+
+        Returns:
+            set[str]: Set of indexed file names
+        """
+        return self.rag_repository.get_indexed_file_names()
+
     def index_documents(self, documents: list, only_missing: bool = False) -> bool:
         """Index a list of documents.
 

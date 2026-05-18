@@ -392,6 +392,32 @@ class RAGRepository:
             logger.error(f"Traceback: {traceback.format_exc()}")
             raise
 
+    def get_indexed_file_names(self) -> set[str]:
+        """Retrieve the set of file names already present in the vector store."""
+        if not self.engine:
+            return set()
+        try:
+            table_name = f"data_{settings.VECTOR_TABLE_NAME}"
+            with self.engine.connect() as conn:
+                table_exists = conn.execute(
+                    text("SELECT to_regclass(:table)"),
+                    {"table": table_name},
+                ).scalar()
+
+                if not table_exists:
+                    return set()
+
+                result = conn.execute(
+                    text(
+                        f"SELECT DISTINCT metadata_->>'file_name' FROM {table_name} WHERE metadata_ IS NOT NULL"
+                    )
+                )
+                return {row[0] for row in result if row[0]}
+
+        except Exception as e:
+            logger.error(f"Could not retrieve indexed file names: {e}")
+            return set()
+
     def get_document_count(self) -> int:
         """Get the total number of documents in the vector store.
 

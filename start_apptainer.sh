@@ -128,6 +128,18 @@ fi
 echo "   Syncing Python dependencies..."
 apptainer exec --cleanenv --env UV_LINK_MODE=copy ultimate-advisor-bg.sif uv sync
 
+# 4.5 Build Frontend if it doesn't exist
+echo "4.5. Checking and building Frontend"
+if [ ! -d "frontend/dist" ]; then
+    echo "   'frontend/dist' not found. Building frontend using a temporary Node.js container..."
+    echo "   This may take a minute on the first run..."
+    # Use npm directly to avoid permission issues with global pnpm install
+    apptainer exec docker://node:20-slim bash -c "cd frontend && npm install && npm run build"
+    echo "   ✓ Frontend built successfully."
+else
+    echo "   'frontend/dist' already exists. Skipping frontend build."
+fi
+
 # 5. Start the Application Instance
 echo "5. Starting Application"
 if ! apptainer instance list | grep -q "app-advisor"; then

@@ -124,6 +124,13 @@ def load_and_index_documents(
             logger.error("Repository health check failed")
             return False
 
+        indexed_files = set()
+        if incremental:
+            indexed_files = rag_service.get_indexed_file_names()
+            logger.info(
+                f"Found {len(indexed_files)} files already partially or fully indexed in database."
+            )
+
         if target_file:
             file_path = Path(target_file)
             if not file_path.exists():
@@ -136,6 +143,11 @@ def load_and_index_documents(
 
         all_documents = []
         for file_path in document_files:
+            # Skip the file entirely if it's already in the DB and we didn't explicitly target it
+            if incremental and file_path.name in indexed_files and not target_file:
+                logger.info(f"Skipping reading file (already in DB): {file_path.name}")
+                continue
+
             logger.info(f"Loading document: {file_path}")
             docs = loader.load_specific_document(file_path)
             all_documents.extend(docs)
