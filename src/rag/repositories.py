@@ -125,20 +125,81 @@ class RAGRepository:
             logger.error("Failed to setup database: %s", e)
             raise
 
-    def index_documents(self, documents: list) -> bool:
+    def index_documents(self, documents: list, only_missing=False) -> bool:
         """Index documents into the vector store.
 
         Optimized for small document collections (single document with ~17 pages).
         Uses smaller chunk sizes and reduced overlap for better granularity.
         """
         try:
-            logger.info("Creating index from documents...")
-            logger.info(f"Number of documents to index: {len(documents)}")
+            documents_to_process = documents
+            if only_missing:
+                logger.info(
+                    "Checking for already indexed documents (only_missing=True)..."
+                )
+                if not self.engine:
+                    logger.warning(
+                        "Cannot check for existing documents, no database engine. Indexing all documents."
+                    )
+                else:
+                    indexed_docs = set()
+                    table_name = f"data_{settings.VECTOR_TABLE_NAME}"
+                    try:
+                        with self.engine.connect() as conn:
+                            table_exists_res = conn.execute(
+                                text("SELECT to_regclass(:table)"),
+                                {"table": table_name},
+                            ).scalar()
+                            if table_exists_res:
+                                result = conn.execute(
+                                    text(
+                                        f"SELECT metadata_->>'file_name', metadata_->>'page_label' FROM {table_name} WHERE metadata_ IS NOT NULL"
+                                    )
+                                )
+                                for row in result:
+                                    if row[0] and row[1]:
+                                        indexed_docs.add((row[0], str(row[1])))
 
-            for doc in documents:
+                        if indexed_docs:
+                            original_count = len(documents)
+                            documents_to_process = [
+                                doc
+                                for doc in documents
+                                if (
+                                    doc.metadata.get("file_name"),
+                                    str(doc.metadata.get("page_label")),
+                                )
+                                not in indexed_docs
+                            ]
+                            skipped_count = original_count - len(documents_to_process)
+                            if skipped_count > 0:
+                                logger.info(
+                                    f"Skipping {skipped_count} documents that are already indexed."
+                                )
+                    except Exception as e:
+                        logger.error(
+                            f"Could not retrieve existing documents from vector store: {e}. Indexing all documents."
+                        )
+
+            if not documents_to_process:
+                logger.info("No new documents to index.")
+                return True
+
+            logger.info(f"Number of documents to index: {len(documents_to_process)}")
+
+            for doc in documents_to_process:
                 content = doc.get_content()
                 if content:
                     doc.set_content(content.replace("\x00", ""))
+
+                    cleaned_text = doc.get_content().strip()
+                    if len(cleaned_text) < 50:
+                        file_name = doc.metadata.get("file_name", "Unknown")
+                        page = doc.metadata.get("page_label", "Unknown")
+                        logger.warning(
+                            f"Page presque vide: Fichier '{file_name}' | Page {page} | Nombre de caractères : {len(cleaned_text)}"
+                        )
+                        logger.warning(f"-> Texte brut lu par pypdf : '{cleaned_text}'")
 
             text_splitter = SentenceSplitter(
                 chunk_size=256,
@@ -155,8 +216,23 @@ class RAGRepository:
 
             logger.info("Découpage des documents en chunks (Multiprocessing)...")
             nodes = text_splitter.get_nodes_from_documents(
-                documents, num_workers=4, show_progress=True
+                documents_to_process, num_workers=4, show_progress=True
             )
+            """
+            # Temporaire -------------------------------------------------
+            print(
+                f"\n{'=' * 50}\nDEBUG: AFFICHAGE DES CHUNKS ({len(nodes)} générés)\n{'=' * 50}"
+            )
+            for i, node in enumerate(nodes):
+                print(
+                    f"\n--- CHUNK {i + 1} (Longueur : {len(node.text)} caractères) ---"
+                )
+                print(node.text)
+                print("-" * 10)
+                print(node.metadata)
+                print("-" * 20)
+            # Temporaire -------------------------------------------------
+            """
 
             logger.info("Initialisation de l'index...")
             self.index = VectorStoreIndex(
@@ -181,15 +257,15 @@ class RAGRepository:
                         try:
                             self.index.insert_nodes([node])
                         except Exception:
-                            file_name = node.metadata.get("file_name", "Inconnu")
-                            page = node.metadata.get("page", "Inconnu")
+                            file_name = node.metadata.get("file_name", "Unknown")
+                            page = node.metadata.get("page_label", "Unknown")
                             text_snippet = node.text[:200].replace("\n", " ")
                             logger.error(
                                 f"❌ CRASH CONFIRMÉ SUR : Fichier '{file_name}' | Page {page}"
                             )
                             logger.error(f"-> Extrait du texte : {text_snippet}...")
                             logger.warning(
-                                "-> Ce morceau a été ignoré. L'indexation continue !"
+                                "-> Ce morceau a été ignoré. Poursuite de l'indexation"
                             )
 
             if self.index:
@@ -262,6 +338,7 @@ class RAGRepository:
             postprocessors = [SimilarityPostprocessor(similarity_cutoff=0.6)]
 
             query_engine = CitationQueryEngine.from_args(
+                index=self.index,
                 retriever=retriever,
                 response_mode="tree_summarize",
                 node_postprocessors=postprocessors,

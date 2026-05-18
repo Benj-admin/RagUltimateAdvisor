@@ -36,7 +36,7 @@ if [ ! -s "$PG_DATA_DIR/PG_VERSION" ]; then
     apptainer exec \
         --bind "$PG_DATA_DIR:/var/lib/postgresql/data" \
         pg-advisor.sif \
-        /usr/lib/postgresql/17/bin/initdb -D /var/lib/postgresql/data --auth=trust
+        /usr/lib/postgresql/17/bin/initdb -D /var/lib/postgresql/data --auth=trust --locale=C.UTF-8
 fi
 
 echo "2. Starting PostgreSQL instance"
@@ -126,7 +126,7 @@ EOF
 fi
 
 echo "   Syncing Python dependencies..."
-apptainer exec ultimate-advisor-bg.sif sh -c "export UV_LINK_MODE=copy && uv sync"
+apptainer exec --cleanenv --env UV_LINK_MODE=copy ultimate-advisor-bg.sif uv sync
 
 # 5. Start the Application Instance
 echo "5. Starting Application"

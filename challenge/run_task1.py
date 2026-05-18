@@ -1,4 +1,4 @@
-"""Script to run Task 1 of the RAG EvalLLM Challenge."""
+"""Script to run Task 1 of the RAG EvalLLM Challenge"""
 
 import json
 import logging
@@ -59,7 +59,8 @@ def process_task1(input_file: Path, output_file: Path) -> None:
 
 
 if __name__ == "__main__":
-    input_path = Path("data/challenge_input.json")
+    input_file_name = sys.argv[1] if len(sys.argv) > 1 else "data/challenge_input.json"
+    input_path = Path(input_file_name)
     output_path = Path("submissions/task1_submission.json")
 
     if not input_path.exists():

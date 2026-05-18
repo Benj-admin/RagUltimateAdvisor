@@ -39,11 +39,12 @@ class RAGService:
         """
         return self.rag_repository.get_document_count()
 
-    def index_documents(self, documents: list) -> bool:
+    def index_documents(self, documents: list, only_missing: bool = False) -> bool:
         """Index a list of documents.
 
         Args:
             documents: List of Document objects to index
+            only_missing: Whether to only index missing documents
 
         Returns:
             bool: True if indexing was successful
@@ -53,23 +54,31 @@ class RAGService:
                 logger.warning("No documents to index")
                 return False
             logger.info(f"Indexing {len(documents)} documents")
-            return self.rag_repository.index_documents(documents)
+            return self.rag_repository.index_documents(
+                documents, only_missing=only_missing
+            )
         except Exception as e:
             logger.error(f"Indexing failed: {e}")
             return False
 
-    def index_documents_from_directory(self, directory_path: Path) -> bool:
+    def index_documents_from_directory(
+        self, directory_path: Path, only_missing=False
+    ) -> bool:
         """Index all documents from a directory.
 
         Args:
             directory_path: Path to the directory containing documents
+            only_missing: Whether to only index missing documents
+
 
         Returns:
             bool: True if indexing was successful
         """
         try:
             documents = SimpleDirectoryReader(directory_path).load_data()
-            return self.rag_repository.index_documents(documents)
+            return self.rag_repository.index_documents(
+                documents, only_missing=only_missing
+            )
 
         except Exception as e:
             logger.error(

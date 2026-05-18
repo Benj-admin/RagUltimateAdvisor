@@ -4,6 +4,7 @@ This script processes all documents in the data folder and indexes them
 into the vector store for RAG operations.
 """
 
+import argparse
 import logging
 import sys
 from pathlib import Path
@@ -94,14 +95,25 @@ class DocumentLoader:
             return []
 
 
-def load_and_index_documents(rag_service: RAGService) -> bool:
+def load_and_index_documents(
+    rag_service: RAGService,
+    incremental: bool = False,
+    target_file: str | None = None,
+) -> bool:
     """Main function to load and index documents.
+
+    Args:
+        rag_service: The RAG service instance.
+        incremental: If True, only index documents that are not already in the store.
+        target_file: Optional path to a specific file to index.
 
     Returns:
         bool: True if successful, False otherwise
     """
     try:
         logger.info("Starting document loading and indexing process")
+        if incremental:
+            logger.info("Running in incremental mode. Will only index new documents.")
 
         loader = DocumentLoader()
 
@@ -112,8 +124,15 @@ def load_and_index_documents(rag_service: RAGService) -> bool:
             logger.error("Repository health check failed")
             return False
 
-        data_path = Path(settings.DATA_FOLDER)
-        document_files = loader.get_document_files(str(data_path))
+        if target_file:
+            file_path = Path(target_file)
+            if not file_path.exists():
+                logger.error(f"Target file {file_path} does not exist.")
+                return False
+            document_files = [file_path]
+        else:
+            data_path = Path(settings.DATA_FOLDER)
+            document_files = loader.get_document_files(str(data_path))
 
         all_documents = []
         for file_path in document_files:
@@ -126,7 +145,7 @@ def load_and_index_documents(rag_service: RAGService) -> bool:
             return False
 
         logger.info(f"Indexing {len(all_documents)} documents into vector store")
-        success = rag_service.index_documents(all_documents)
+        success = rag_service.index_documents(all_documents, only_missing=incremental)
 
         if success:
             logger.info("Document indexing completed successfully")
@@ -144,13 +163,32 @@ def load_and_index_documents(rag_service: RAGService) -> bool:
 
 def main() -> None:
     """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="Load and index documents into the RAG vector database."
+    )
+    parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Only index new documents, skip those already in the vector store.",
+    )
+    parser.add_argument(
+        "--file",
+        type=str,
+        default=None,
+        help="Path to a specific file to index (instead of the whole directory).",
+    )
+    args = parser.parse_args()
     try:
         logger.info("=" * 50)
         logger.info("Document Loading Script")
         logger.info("=" * 50)
         rag_service: RAGService = get_rag_service()
 
-        success = load_and_index_documents(rag_service)
+        success = load_and_index_documents(
+            rag_service,
+            incremental=args.incremental,
+            target_file=args.file,
+        )
 
         if success:
             logger.info("✓ Document loading and indexing completed successfully")
