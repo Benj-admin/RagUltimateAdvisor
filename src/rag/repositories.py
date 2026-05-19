@@ -25,6 +25,7 @@ from llama_index.llms.ollama import Ollama
 from llama_index.vector_stores.postgres import PGVectorStore
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from tqdm import tqdm
 
 from src.config import settings
 from src.schemas import DocumentMetadata, QueryRequest, QueryResponse, SourceDocument
@@ -261,7 +262,7 @@ class RAGRepository:
                 "Génération des embeddings et insertion (Mode Détective Ultra-Résilient)..."
             )
             batch_size = 32
-            for i in range(0, len(nodes), batch_size):
+            for i in tqdm(range(0, len(nodes), batch_size), desc="Generating embeddings and inserting"):
                 batch = nodes[i : i + batch_size]
                 try:
                     self.index.insert_nodes(batch)

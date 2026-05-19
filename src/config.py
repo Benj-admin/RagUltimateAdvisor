@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     DB_VERSION: str = Field(default="", description="Database version suffix")
 
     # Vector Store Configuration
-    _VECTOR_TABLE_BASE_NAME: str = Field(default="documents", alias="VECTOR_TABLE_NAME", description="Base name for the vector table, read from .env")
+    VECTOR_TABLE_BASE_NAME: str = Field(default="documents", alias="VECTOR_TABLE_NAME", description="Base name for the vector table, read from .env")
     EMBED_DIM: int = Field(
         default=768,
         description="Dimension of the embedding vectors (auto-detected from model)",
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     @property
     def VECTOR_TABLE_NAME(self) -> str:
         """Construct the full versioned vector table name used by the application."""
-        return f"{self._VECTOR_TABLE_BASE_NAME}_{self.EMBED_DIM}_{self.DB_VERSION}"
+        return f"{self.VECTOR_TABLE_BASE_NAME}_{self.EMBED_DIM}_{self.DB_VERSION}"
 
 
     model_config = SettingsConfigDict(
