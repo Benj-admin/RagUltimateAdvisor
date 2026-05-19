@@ -14,7 +14,10 @@ from llama_index.core import (
     VectorStoreIndex,
 )
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.postprocessor import SimilarityPostprocessor
+from llama_index.core.postprocessor import (
+    SentenceTransformerRerank,
+    SimilarityPostprocessor,
+)
 from llama_index.core.query_engine import CitationQueryEngine
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.embeddings.ollama import OllamaEmbedding
@@ -114,7 +117,7 @@ class RAGRepository:
                 user=settings.PG_USER,
                 table_name=settings.VECTOR_TABLE_NAME,
                 embed_dim=embed_dim,
-                # hybrid_search=True,
+                hybrid_search=True,
             )
             logger.info(
                 "Vector store configured with table '%s' (embed_dim=%s)",
@@ -218,6 +221,19 @@ class RAGRepository:
             nodes = text_splitter.get_nodes_from_documents(
                 documents_to_process, num_workers=4, show_progress=True
             )
+
+            # Filtrage des chunks non pertinents (trop courts ou boilerplate)
+            original_node_count = len(nodes)
+            min_chunk_size = 100  # Seuil de caractères minimum
+            nodes = [
+                node
+                for node in nodes
+                if len(node.get_content().strip()) > min_chunk_size
+            ]
+            logger.info(
+                f"Filtrage des chunks: {original_node_count - len(nodes)} chunks ignorés (longueur < {min_chunk_size} caractères)."
+            )
+
             """
             # Temporaire -------------------------------------------------
             print(
@@ -330,12 +346,22 @@ class RAGRepository:
             # Modes : "default", "sparse" , "hybrid"
             retriever = VectorIndexRetriever(
                 index=self.index,
-                similarity_top_k=optimized_top_k,
-                vector_store_query_mode="default",
+                similarity_top_k=optimized_top_k,  # Pour la recherche vectorielle
+                sparse_top_k=optimized_top_k,  # Pour la recherche par mots-clés (FTS)
+                vector_store_query_mode="hybrid",
             )
 
             # Post-processing/ Rerank
             postprocessors = [SimilarityPostprocessor(similarity_cutoff=0.6)]
+            # L'ancien postprocesseur simple :
+            # postprocessors = [SimilarityPostprocessor(similarity_cutoff=0.6)]
+
+            # Nouveau postprocesseur avec reranker pour une meilleure pertinence.
+            # Nécessite `pip install sentence-transformers`
+            reranker = SentenceTransformerRerank(
+                model="cross-encoder/ms-marco-minilm-l-6-v2", top_n=query_request.top_k
+            )
+            postprocessors = [reranker]
 
             query_engine = CitationQueryEngine.from_args(
                 index=self.index,
