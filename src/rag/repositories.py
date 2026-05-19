@@ -354,15 +354,6 @@ class RAGRepository:
 
             # Post-processing/ Rerank
             postprocessors = [SimilarityPostprocessor(similarity_cutoff=0.6)]
-            # L'ancien postprocesseur simple :
-            # postprocessors = [SimilarityPostprocessor(similarity_cutoff=0.6)]
-
-            # Nouveau postprocesseur avec reranker pour une meilleure pertinence.
-            # Nécessite `pip install sentence-transformers`
-            reranker = SentenceTransformerRerank(
-                model="cross-encoder/ms-marco-minilm-l-6-v2", top_n=query_request.top_k
-            )
-            postprocessors = [reranker]
 
             query_engine = CitationQueryEngine.from_args(
                 index=self.index,

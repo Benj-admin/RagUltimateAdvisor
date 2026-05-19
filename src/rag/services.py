@@ -83,7 +83,8 @@ class RAGService:
             bool: True if indexing was successful
         """
         try:
-            documents = SimpleDirectoryReader(directory_path).load_data()
+            reader = SimpleDirectoryReader(input_dir=directory_path, num_workers=4)
+            documents = reader.load_data()
             return self.rag_repository.index_documents(
                 documents, only_missing=only_missing
             )
