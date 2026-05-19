@@ -118,6 +118,7 @@ class RAGRepository:
                 user=settings.PG_USER,
                 table_name=settings.VECTOR_TABLE_NAME,
                 embed_dim=embed_dim,
+                text_search_config="french",
                 hybrid_search=True,
             )
             logger.info(

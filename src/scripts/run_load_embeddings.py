@@ -28,6 +28,8 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("pypdf").setLevel(logging.WARNING)
 
 
+import json
+
 class DocumentLoader:
     """Handles loading and processing of documents."""
 
@@ -37,6 +39,8 @@ class DocumentLoader:
             ".pdf",
             ".PDF",
         }
+        self.cache_dir = Path(settings.DATA_FOLDER) / ".cache"
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def get_document_files(self, directory_path: str) -> list[Path]:
         """Get all supported document files from the directory.
@@ -59,6 +63,10 @@ class DocumentLoader:
 
         document_files = []
         for file_path in directory.rglob("*"):
+            # Skip the cache directory
+            if ".cache" in file_path.parts:
+                continue
+                
             if (
                 file_path.is_file()
                 and file_path.suffix.lower() in self.supported_extensions
@@ -69,7 +77,7 @@ class DocumentLoader:
         return document_files
 
     def load_specific_document(self, file_path: Path) -> list[Document]:
-        """Load a specific document file.
+        """Load a specific document file, utilizing a JSON cache if available.
 
         Args:
             file_path: Path to the document file
@@ -82,11 +90,31 @@ class DocumentLoader:
                 logger.error(f"File {file_path} does not exist")
                 return []
 
+            cache_file = self.cache_dir / f"{file_path.name}.json"
+
+            # Check if cached version exists
+            if cache_file.exists():
+                logger.info(f"Loading cached document for {file_path.name}")
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    cached_data = json.load(f)
+                    
+                documents = [Document.from_dict(doc_dict) for doc_dict in cached_data]
+                logger.info(f"Loaded {len(documents)} documents from cache for {file_path.name}")
+                return documents
+
+            # If no cache, read using SimpleDirectoryReader
+            logger.info(f"Parsing PDF (cache miss) for {file_path.name}")
             reader = SimpleDirectoryReader(
                 input_files=[str(file_path)], recursive=False
             )
 
             documents = reader.load_data()
+            
+            # Save to cache
+            logger.info(f"Saving parsed document to cache for {file_path.name}")
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump([doc.to_dict() for doc in documents], f, ensure_ascii=False, indent=2)
+
             logger.info(f"Loaded {len(documents)} documents from {file_path}")
             return documents
 
