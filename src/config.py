@@ -16,11 +16,10 @@ class Settings(BaseSettings):
     PG_USER: str = Field(description="PostgreSQL username")
     PG_PASSWORD: str = Field(description="PostgreSQL user password")
     PG_DATABASE: str = Field(description="PostgreSQL database name")
+    DB_VERSION: str = Field(default="", description="Database version suffix")
 
     # Vector Store Configuration
-    VECTOR_TABLE_NAME: str = Field(
-        default="documents", description="Name of the table to store document vectors"
-    )
+    _VECTOR_TABLE_BASE_NAME: str = Field(default="documents", alias="VECTOR_TABLE_NAME", description="Base name for the vector table, read from .env")
     EMBED_DIM: int = Field(
         default=768,
         description="Dimension of the embedding vectors (auto-detected from model)",
@@ -42,6 +41,12 @@ class Settings(BaseSettings):
     def database_url(self) -> str:
         """Construct PostgreSQL database URL."""
         return f"postgresql://{self.PG_USER}:{self.PG_PASSWORD}@{self.PG_HOST}:{self.PG_PORT}/{self.PG_DATABASE}"
+    
+    @property
+    def VECTOR_TABLE_NAME(self) -> str:
+        """Construct the full versioned vector table name used by the application."""
+        return f"{self._VECTOR_TABLE_BASE_NAME}_{self.EMBED_DIM}_{self.DB_VERSION}"
+
 
     model_config = SettingsConfigDict(
         env_prefix="APP_",
